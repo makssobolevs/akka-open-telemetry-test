@@ -13,6 +13,8 @@ import akka.util.Timeout
 import com.github.makssobolevs.TestActor.ReplyMessage
 
 import scala.concurrent.duration.DurationInt
+import scala.util.Failure
+import scala.util.Success
 
 
 object App {
@@ -37,8 +39,16 @@ object App {
         }
       }
 
-    Http()
+    val binding = Http()
       .newServerAt("localhost", 8080)
       .bind(testRoute)
+    binding.onComplete {
+      case Success(binding) =>
+        val address = binding.localAddress
+        system.log.info("Server online at http://{}:{}/", address.getHostString, address.getPort)
+      case Failure(ex) =>
+        system.log.error("Failed to bind HTTP endpoint, terminating system", ex)
+        system.terminate()
+    }
   }
 }
